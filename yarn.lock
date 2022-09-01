@@ -2206,7 +2206,7 @@
 
 "mysql2@^2.3.3":
   "integrity" "sha512-wxJUev6LgMSgACDkb/InIFxDprRa6T95+VEoR+xPvtngtccNH2dGjEB/fVZ8yg1gWv1510c9CvXuJHi5zUm0ZA=="
-  "resolved" "https://registry.npmjs.org/mysql2/-/mysql2-2.3.3.tgz"
+  "resolved" "https://registry.npmmirror.com/mysql2/-/mysql2-2.3.3.tgz"
   "version" "2.3.3"
   dependencies:
     "denque" "^2.0.1"

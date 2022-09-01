@@ -7,8 +7,10 @@ const logger = require("koa-logger");
 const log4js = require("./utils/log4j");
 const router = require("koa-router")();
 // const jwt = require("jsonwebtoken");
-const koajwt = require("koa-jwt");
+// const koajwt = require("koa-jwt");
 const util = require("./utils/util");
+const materials = require("./routes/materials")
+const reactions = require("./routes/reactions")
 
 // error handler
 onerror(app);
@@ -37,14 +39,16 @@ app.use(async (ctx, next) => {
   });
 });
 
-app.use(
-  koajwt({ secret: "imooc" }).unless({
-    path: [/^\/api\/users\/login/]
-  })
-);
+// app.use(
+//   koajwt({ secret: "imooc" }).unless({
+//     path: [/^\/api\/users\/login/]
+//   })
+// );
 
 router.prefix("/api");
 
+router.use(materials.routes(), materials.allowedMethods());
+router.use(reactions.routes(), reactions.allowedMethods());
 app.use(router.routes(), router.allowedMethods());
 
 // error-handling
