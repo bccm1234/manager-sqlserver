@@ -28,20 +28,20 @@ const dealInputArrMethodOne = function (arr) {
     if (x != "*") return x;
   });
   let newlength = arr.length;
-  let str = `json_contains_path(f_json,'all'`;
+  let str = `json_contains_path(formula,'all'`;
   for (let i = 0; i < newlength; i++) {
     str = `${str},'$.${arr[i]}'`;
   }
-  str = `${str}) and  ele_num = ${length}`;
+  str = `${str}) and  json_length(formula) = ${length}`;
   return str;
 };
 const dealInputArrMethodTwo = function (arr) {
   let length = arr.length;
-  let str = `json_contains_path(f_json,'all'`;
+  let str = `json_contains_path(formula,'all'`;
   for (let i = 0; i < length; i++) {
     str = `${str},'$.${arr[i]}'`;
   }
-  str = `${str}) and  ele_num >= ${length}`;
+  str = `${str}) and  json_length(formula) >= ${length}`;
   return str;
 };
 const dealInputArrMethodThree = function (input) {
@@ -74,7 +74,7 @@ const dealInputArrMethodThree = function (input) {
     }
   }
   for (let i in params) {
-    str = `${str} f_json ->> '$.${i}'='${params[i]}' and`;
+    str = `${str} formula ->> '$.${i}'='${params[i]}' and`;
   }
   return str.slice(0, str.length - 3);
 };

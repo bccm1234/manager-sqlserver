@@ -1,10 +1,10 @@
 const mysql = require("mysql2");
 const pool = mysql.createPool({
-  host: "sh-cynosdbmysql-grp-20c82mos.sql.tencentcdb.com", // 数据库地址
-  user: "zsh", // 数据库用户
-  password: "zsh.0726", // 数据库密码
+  host: "43.142.96.10", // 数据库地址
+  user: "centos", // 数据库用户
+  password: "Ecust2022", // 数据库密码
   database: "test", // 选中数据库
-  port: "26720"
+  port: "3306"
 });
 
 exports.query = function (arr = null) {
