@@ -1,10 +1,10 @@
 const mysql = require("mysql2");
 const pool = mysql.createPool({
-  host: "sh-cynosdbmysql-grp-20c82mos.sql.tencentcdb.com", // 数据库地址
-  user: "zsh", // 数据库用户
-  password: "zsh.0726", // 数据库密码
+  host: "43.142.96.10", // 数据库地址
+  user: "centos", // 数据库用户
+  password: "Ecust2022", // 数据库密码
   database: "test", // 选中数据库
-  port: "26720"
+  port: "3306"
 });
 
 exports.query = function (arr = null) {
@@ -14,7 +14,7 @@ exports.query = function (arr = null) {
 
   return new Promise((resolve, reject) => {
     pool.getConnection(function (err, connection) {
-        console.log("**mysql连接成功**")
+      console.log("**mysql连接成功**");
       connection.query(arr.sql, (error, results) => {
         if (error) reject(error);
 
@@ -47,6 +47,6 @@ exports.formatLogicParams = function (param, logicSymbol, ...args) {
   return result;
 };
 exports.formatParamsInList = function (param, List) {
-  const  result = `${param} in (${List.join(",")})`
+  const result = `${param} in (${List.join(",")})`;
   return result;
 };
