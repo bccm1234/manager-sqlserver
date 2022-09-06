@@ -190,11 +190,12 @@ const getMol = async function (arr, name, database) {
     for (let m in inchi) {
       sql = `id = ${m}`;
       const mol = await database.query({
-        sql: `select mol from inchi where ${sql}`
+        sql: `select id,mol from inchi where ${sql}`
       });
-      molArr.push(mol[0]);
+      molArr.push(mol[0]["mol"]);
     }
   }
+  molArr = Array.from(new Set(molArr));
   return { molArr, inchiArr };
 };
 
