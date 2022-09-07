@@ -1,19 +1,30 @@
+const { compose } = require("koa-convert");
 const mysql = require("../db/config");
 const dealParams = require("../utils/dealParams");
 const materC = require("./materialsControl");
 const findReactions = async (ctx) => {
-  let { IS, TS, FS, Cat } = ctx.request.query;
+  let { IS, TS, FS, Cat, IS_num, FS_num, isomer } = ctx.request.query;
   let mat_params = eval("(" + Cat + ")");
-  //获取is\ts\fs对应的inchi_id
-  const is_res = await dealParams.dealReactionParams(IS, mysql);
-  const ts_res = await dealParams.dealReactionParams(TS, mysql);
-  const fs_res = await dealParams.dealReactionParams(FS, mysql);
+  let is_sel, ts_sel, fs_sel, is_num, fs_num;
+  if (isomer) {
+    let iso = eval(isomer);
+    is_sel = iso[0];
+    ts_sel = iso[1];
+    fs_sel = iso[2];
+  }
+  if (IS_num) is_num = eval(IS_num);
+  if (FS_num) fs_num = eval(FS_num);
+  //获取is\ts\fs对应的group_id
+  const is_res = await dealParams.dealReactionParams(IS, mysql, is_sel, is_num);
+  const ts_res = await dealParams.dealReactionParams(TS, mysql, ts_sel);
+  const fs_res = await dealParams.dealReactionParams(FS, mysql, fs_sel, fs_num);
   const mat_res = await materC.findMaterialsAbstracts(mat_params);
   const is_sql = dealParams.joinGId(is_res, "r_is");
   const ts_sql = dealParams.joinGId(ts_res, "r_ts");
   const fs_sql = dealParams.joinGId(fs_res, "r_fs");
   const mat_sql = dealParams.joinGId(mat_res, "mat");
   const g_id_arr = [is_sql, ts_sql, fs_sql, mat_sql];
+  console.log(g_id_arr);
   let joinSql = "";
   for (let i = 0; i < g_id_arr.length; i++) {
     if (g_id_arr[i]) {

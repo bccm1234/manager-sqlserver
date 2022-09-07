@@ -81,7 +81,7 @@ const dealInputArrMethodThree = function (input) {
   return str;
 };
 
-const dealReactionParams = async function (params, database) {
+const dealReactionParams = async function (params, database, id, num) {
   // 将string格式数据转array
   params = eval(params);
   if (params) {
@@ -92,7 +92,8 @@ const dealReactionParams = async function (params, database) {
       const ads = params[i].ads;
       let for_info = dealInputParams(formula);
       let sql_info = `${for_info} and ads = ${ads}`;
-      const sql = `select id from inchi where ${sql_info}`;
+      let sql = `select id from inchi where ${sql_info}`;
+      if (id.length != 0) sql = `${sql} and id in (${id})`;
       const inchi = await database.query({ sql: sql });
       if (inchi) inchi_arr.push(inchi);
       else inchi_arr.push([]);
@@ -102,8 +103,10 @@ const dealReactionParams = async function (params, database) {
       let group_Str = "";
       //根据inchi获取g_id
       for (let i = 0; i < inchi_arr.length; i++) {
-        if (inchi_arr[i].length == 0) return "";
-        else {
+        if (inchi_arr[i].length == 0) {
+          console.error("!!!未找到对应inchi_id!!!");
+          return "";
+        } else {
           let length = inchi_arr[i].length;
           let str = `json_contains_path(g_set,'one'`;
           for (let j = 0; j < length; j++) {
@@ -113,6 +116,8 @@ const dealReactionParams = async function (params, database) {
           group_Str = `${group_Str} ${str} and`;
         }
       }
+      if (num)
+        group_Str = `${group_Str} tot_num >=${num[0]} and tot_num <=${num[1]} and`;
       group_Str = group_Str.slice(0, group_Str.length - 3);
       group_Str = `select id from mol_group where ${group_Str}`;
       const res = await database.query({ sql: group_Str });
@@ -190,7 +195,7 @@ const getMol = async function (arr, name, database) {
     for (let m in inchi) {
       sql = `id = ${m}`;
       const mol = await database.query({
-        sql: `select id,mol from inchi where ${sql}`
+        sql: `select id,mol from inchi where ${sql}`,
       });
       molArr.push(mol[0]["mol"]);
     }
@@ -209,5 +214,5 @@ module.exports = {
   //reactions
   dealReactionParams,
   joinGId,
-  getMol
+  getMol,
 };
