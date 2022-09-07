@@ -3,9 +3,9 @@ const mysql = require("../db/config");
 const dealParams = require("../utils/dealParams");
 const materC = require("./materialsControl");
 const findReactions = async (ctx) => {
-  let { IS, TS, FS, Cat, IS_num, FS_num, isomer } = ctx.request.query;
+  let { IS, TS, FS, Cat, IS_num, FS_num, isomer, H, Ea } = ctx.request.query;
   let mat_params = eval("(" + Cat + ")");
-  let is_sel, ts_sel, fs_sel, is_num, fs_num;
+  let is_sel, ts_sel, fs_sel, is_num, fs_num, e_sql;
   if (isomer) {
     let iso = eval(isomer);
     is_sel = iso[0];
@@ -24,14 +24,27 @@ const findReactions = async (ctx) => {
   const fs_sql = dealParams.joinGId(fs_res, "r_fs");
   const mat_sql = dealParams.joinGId(mat_res, "mat");
   const g_id_arr = [is_sql, ts_sql, fs_sql, mat_sql];
-  console.log(g_id_arr);
   let joinSql = "";
   for (let i = 0; i < g_id_arr.length; i++) {
     if (g_id_arr[i]) {
       joinSql = `${joinSql} and ${g_id_arr[i]}`;
     }
   }
+  if (H || Ea) {
+    e_sql = `select r_id from thermo where`;
+    if (H) {
+      H = eval(H);
+      e_sql = `${e_sql} H >= ${H[0]} and H <= ${H[1]} and`;
+    }
+    if (Ea) {
+      Ea = eval(Ea);
+      e_sql = `${e_sql} Ea >= ${Ea[0]} and Ea <= ${Ea[1]} and`;
+    }
+    e_sql = e_sql.slice(0, e_sql.length - 3);
+  }
   joinSql = `select * from reaction r where ${joinSql.replace("and", "")};`;
+  if (e_sql)
+    joinSql = `${joinSql.slice(0, joinSql.length - 1)} and id in (${e_sql});`;
   const reaction_arr = await mysql.query({ sql: joinSql });
   // 获取到反应包含的is group_id 、ts group_id 、 fs group_id
   let r_id_str = "";
