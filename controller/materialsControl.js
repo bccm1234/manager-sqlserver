@@ -3,36 +3,46 @@ const crud = require("../db/crud");
 const mater = require("../utils/dealParams");
 const mysql = require("../db/config");
 
-const adsListContain = "id,mat_type,formula,cry_sys,spa_gro,miller,termin"
+const adsListContain = "id,mat_type,formula,cry_sys,spa_gro,miller,termin";
 const optiContain =
   "source,cif,m.formula,encut,prec,ldau,ivdw,lhfcalc,ldipol,nupdown,excharge,version,vaspfile,basis,cry_sys,spa_gro,miller,termin,fr_energy";
 const elecContain =
   "source,m.formula,encut,prec,ldau,ivdw,lhfcalc,ldipol,nupdown,excharge,version,vaspfile,dos_json,poten_json,chg_den,spin_den";
 //分页查询abstract
 const findMaterialsAbstracts = async (ctx) => {
-  let terms = "";
-  let { Input, type, cry_sys, spa_gro, miller, termin, sort } =
-    ctx.request.query;
+  let Input,
+    type,
+    cry_sys,
+    spa_gro,
+    miller,
+    termin,
+    sort,
+    terms = "";
+  if (ctx.request) {
+    ({ Input, type, cry_sys, spa_gro, miller, termin, sort } =
+      ctx.request.query);
+  } else {
+    ({ Input, cry_sys, spa_gro, miller, termin } = ctx);
+  }
   //处理Input
   const inputStr = mater.dealInputParams(Input);
   //type
   let typeStr = "";
-  if (type) {
-    //去掉下面四个属性中的空属性
-    let containObj = {
-      cry_sys,
-      spa_gro,
-      miller,
-      termin,
-    };
-    Object.keys(containObj).map((item) => {
-      if (containObj[item] == "") {
-        delete containObj[item];
-      } else {
-        typeStr = `mat_type = ${type} and m.${item} = '${containObj[item]}'`;
-      }
-    });
-  }
+  if (type) typeStr = `${typeStr} and m.mat_type = '${type}'`;
+  //去掉下面四个属性中的空属性
+  let containObj = {
+    cry_sys,
+    spa_gro,
+    miller,
+    termin,
+  };
+  Object.keys(containObj).map((item) => {
+    if (containObj[item] == "") {
+      delete containObj[item];
+    } else {
+      typeStr = `${typeStr} and m.${item} = '${containObj[item]}'`;
+    }
+  });
   //排序
   let sortStr = "";
   if (sort) {
@@ -40,16 +50,14 @@ const findMaterialsAbstracts = async (ctx) => {
   }
   //拼接terms
   terms = `${terms} ${inputStr} ${typeStr} ${sortStr}`;
-  const matRes = await crud.complexFind(
-    adsListContain,
-    "material m",
-    terms
-  );
+  const matRes = await crud.complexFind(adsListContain, "material m", terms);
   const res = matRes;
-  if (res) {
+  if (res && ctx.request) {
     ctx.body = util.success(res, "检索成功");
-  } else {
+  } else if (ctx.request) {
     ctx.body = util.fail("未能检索到相关材料，请重新输入");
+  } else {
+    return res;
   }
 };
 
