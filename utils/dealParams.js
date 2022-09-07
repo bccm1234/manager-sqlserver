@@ -114,7 +114,7 @@ const dealReactionParams = async function (params, database) {
         }
       }
       group_Str = group_Str.slice(0, group_Str.length - 3);
-      group_Str = `select id from \`group\` where ${group_Str}`;
+      group_Str = `select id from mol_group where ${group_Str}`;
       const res = await database.query({ sql: group_Str });
       return res;
     } else {
@@ -177,7 +177,7 @@ const getMol = async function (arr, name, database) {
   let molArr = [];
   let inchiArr = [];
   for (let a = 0; a < arr.length; a++) {
-    const sql = `select g_set from \`group\` where id = ${arr[a][name]}`;
+    const sql = `select g_set from mol_group where id = ${arr[a][name]}`;
     const res = await database.query({ sql });
     const inchi = Object.values(res[0])[0];
     inchiArr.push(inchi);
