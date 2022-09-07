@@ -11,10 +11,11 @@ const router = require("koa-router")();
 const util = require("./utils/util");
 const materials = require("./routes/materials")
 const reactions = require("./routes/reactions")
-
+const cors = require("koa2-cors")
 // error handler
 onerror(app);
 
+app.use(cors())
 // middlewares
 app.use(
   bodyparser({
@@ -22,10 +23,11 @@ app.use(
   })
 );
 app.use(json());
-app.use(logger());
-// app.use(require("koa-static")(__dirname + "/public"));
+app.use(require("koa-static")(__dirname + "/public"));
 
-// logger
+app.use(logger());
+
+// logger 
 app.use(async (ctx, next) => {
   log4js.info(`get params:${JSON.stringify(ctx.request.query)}`);
   log4js.info(`post params:${JSON.stringify(ctx.request.body)}`);

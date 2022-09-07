@@ -32,7 +32,7 @@ const dealInputArrMethodOne = function (arr) {
   for (let i = 0; i < newlength; i++) {
     str = `${str},'$.${arr[i]}'`;
   }
-  str = `${str}) and  ele_num = ${length}`;
+  str = `${str}) and  json_length(formula) = ${length}`;
   return str;
 };
 const dealInputArrMethodTwo = function (arr) {
@@ -41,7 +41,7 @@ const dealInputArrMethodTwo = function (arr) {
   for (let i = 0; i < length; i++) {
     str = `${str},'$.${arr[i]}'`;
   }
-  str = `${str}) and  ele_num >= ${length}`;
+  str = `${str}) and  json_length(formula) >= ${length}`;
   return str;
 };
 const dealInputArrMethodThree = function (input) {
