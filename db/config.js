@@ -14,7 +14,7 @@ exports.query = function (arr = null) {
 
   return new Promise((resolve, reject) => {
     pool.getConnection(function (err, connection) {
-        console.log("**mysql连接成功**")
+      console.log("**mysql连接成功**");
       connection.query(arr.sql, (error, results) => {
         if (error) reject(error);
 
@@ -47,6 +47,6 @@ exports.formatLogicParams = function (param, logicSymbol, ...args) {
   return result;
 };
 exports.formatParamsInList = function (param, List) {
-  const  result = `${param} in (${List.join(",")})`
+  const result = `${param} in (${List.join(",")})`;
   return result;
 };

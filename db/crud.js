@@ -62,5 +62,5 @@ module.exports = {
   findAll,
   findAllThenPaging,
   deleteOne,
-  update
+  update,
 };
