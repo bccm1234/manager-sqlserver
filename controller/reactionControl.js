@@ -3,7 +3,7 @@ const mysql = require("../db/config");
 const util = require("../utils/util");
 const dealParams = require("../utils/dealParams");
 const materC = require("./materialsControl");
-const findReactions = async (ctx) => {
+const findReList = async (ctx) => {
   let { IS, TS, FS, Cat, IS_num, FS_num, isomer, H, Ea } = ctx.request.query;
   let mat_params = eval("(" + Cat + ")");
   let is_sel, ts_sel, fs_sel, is_num, fs_num, e_sql;

@@ -1,4 +1,4 @@
-const { findReactions } = require("../controller/reactionControl");
+const { findReInfo,findReList } = require("../controller/reactionControl");
 
 const router = require("koa-router")();
 router.prefix("/reactions");
