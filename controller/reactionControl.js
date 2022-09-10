@@ -1,8 +1,9 @@
 const mysql = require("../db/config");
+const util = require("../utils/util");
 const dealParams = require("../utils/dealParams");
 //ctx: is[{formula:"Cu2O",ads:0}]
 console.log(dealParams.dealInputParams("Cu2O"));
-const findReactions = async (ctx) => {
+const findReList = async (ctx) => {
   let { is, ts, fs } = ctx.request.query;
   //处理is
   //获取is对应的f_id
@@ -61,6 +62,141 @@ const findReactions = async (ctx) => {
   };
 };
 
+const findReInfo = async (ctx) => {
+  const { id } = ctx.request.query;
+try{//数组去零拼接成(1,2)样式
+  const filterArr = function (arr) {
+    let arr_filter = arr.filter((element) => {
+      return element !== 0;
+    });
+    let arr_str;
+    if (arr_filter.length) {
+      arr_str = `(${arr_filter.join(",")})`;
+    } else {
+      arr_str = "";
+    }
+    return arr_str;
+  };
+
+  //abstract
+  const is_sql = `select g_set from mol_group mg where mg.id = (select r_is from reaction where id  = ${id});`;
+  const ts_sql = `select g_set from mol_group mg where mg.id = (select r_ts from reaction where id  = ${id});`;
+  const fs_sql = `select g_set from mol_group mg where mg.id = (select r_fs from reaction where id  = ${id});`;
+  const is_res = (await mysql.query({ sql: is_sql }))[0].g_set;
+  const ts_res = (await mysql.query({ sql: ts_sql }))[0].g_set;
+  const fs_res = (await mysql.query({ sql: fs_sql }))[0].g_set;
+  const is_keys_arr = Object.keys(is_res).sort()
+  const ts_keys_arr = Object.keys(ts_res).sort()
+  const fs_keys_arr = Object.keys(fs_res).sort()
+  const is_keys = `(${is_keys_arr.join(",")})`;
+  const ts_keys = `(${ts_keys_arr.join(",")})`;
+  const fs_keys = `(${fs_keys_arr.join(",")})`;
+  const is_mol_sql = `select inchi,inchikey,formula,mol,ads from inchi where id in ${is_keys}`;
+  const ts_mol_sql = `select inchi,inchikey,formula,mol,ads from inchi where id in ${ts_keys}`;
+  const fs_mol_sql = `select inchi,inchikey,formula,mol,ads from inchi where id in ${fs_keys}`;
+  let is_mol = await mysql.query({ sql: is_mol_sql });
+  let ts_mol = await mysql.query({ sql: ts_mol_sql });
+  let fs_mol = await mysql.query({ sql: fs_mol_sql });
+  is_mol.forEach((element,index) => {
+    element.num = is_keys_arr[index];
+  });
+  ts_mol.forEach((element,index) => {
+    element.num = ts_keys_arr[index];
+  });
+  fs_mol.forEach((element,index) => {
+    element.num = fs_keys_arr[index];
+  });
+  const info_sql = `select r_type,r_is as group_is,r_ts as group_ts,r_fs as group_fs,formula catalyst_formula,cry_sys,spa_gro,miller,termin from reaction r,material m where r.id = ${id} and r.mat = m.id;`;
+  const info = await mysql.query({ sql: info_sql });
+  //co
+  const co_sql = `select is_json,ts_json,fs_json,is_energy,ts_energy,fs_energy,h,ea,source from thermo t where t.r_id = ${id} and thermo_type = 'co' order by star;`;
+  let co_res = await mysql.query({ sql: co_sql });
+
+  for (let i = 0; i < co_res.length; i++) {
+    //获取cif信息
+    let is_json = co_res[i].is_json;
+    let ts_json = co_res[i].ts_json;
+    let fs_json = co_res[i].fs_json;
+
+    let is_mix = filterArr(is_json.mix);
+    let ts_mix = filterArr(ts_json.mix);
+    let fs_mix = filterArr(fs_json.mix);
+    if (is_mix) {
+      const mix_cif_sql = `select cif from vaspjob where id in ${is_mix};`;
+      let mix_cif = (await mysql.query({ sql: mix_cif_sql })).map((element) => {
+        return element.cif;
+      });
+      co_res[i].is_json.mix_cif = mix_cif;
+    }
+    if (ts_mix) {
+      const mix_cif_sql = `select cif from vaspjob where id in ${ts_mix};`;
+      let mix_cif = (await mysql.query({ sql: mix_cif_sql })).map((element) => {
+        return element.cif;
+      });
+      co_res[i].ts_json.mix_cif = mix_cif;
+    }
+    if (fs_mix) {
+      const mix_cif_sql = `select cif from vaspjob where id in ${fs_mix};`;
+      let mix_cif = (await mysql.query({ sql: mix_cif_sql })).map((element) => {
+        return element.cif;
+      });
+      co_res[i].fs_json.mix_cif = mix_cif;
+    }
+    //获取计算信息-取末态的mix
+    const job_id = co_res[i].fs_json.mix[0];
+    const cat_info_sql = `select source,encut,prec,ldau,ivdw,lhfcalc,ldipol,nupdown,excharge,version,formula as atom_color from vaspjob v,incar i,poscar p where v.id = ${job_id} and v.incar_id = i.id and v.poscar_id = p.id;`;
+    const cat_info = (await mysql.query({ sql: cat_info_sql }))[0];
+    cat_info.atom_color = Object.keys(cat_info.atom_color)
+    Object.assign(co_res[i],cat_info)
+    //获取所有的vaspfile-获取所有mix
+    const mix_all = `(${[
+      ...co_res[i].is_json.mix,
+      ...co_res[i].ts_json.mix,
+      ...co_res[i].fs_json.mix,
+    ].join(",")})`;
+    const co_vasp_file_sql = `select vaspfile from vaspjob v,poscar p where v.id in ${mix_all} and v.poscar_id = p.id`;
+    const co_vasp_file = await mysql.query({ sql: co_vasp_file_sql });
+    let co_vasp_file_arr = co_vasp_file.map(element=>{
+      return element.vaspfile
+    })
+    co_res[i].vaspfile = co_vasp_file_arr
+    co_res[i].is_json = co_res[i].is_json.mix_cif
+    co_res[i].ts_json = co_res[i].ts_json.mix_cif
+    co_res[i].fs_json = co_res[i].fs_json.mix_cif
+  }
+  //iso
+  const iso_sql = `select is_json,ts_json,fs_json,is_energy,ts_energy,fs_energy,h,ea,source from thermo t where t.r_id = ${id} and thermo_type = 'iso' order by star;`;
+  let iso_res = await mysql.query({ sql: iso_sql });
+
+  //拼接字符串
+  const splitStr = function (str) {
+    return `select v.id,cif,formula as atom_color,fr_energy,source,encut,prec,ldau,ivdw,lhfcalc,ldipol,nupdown,excharge,version from vaspjob v,incar i,poscar p where v.id in ${str} and v.incar_id = i.id and v.poscar_id = p.id;`;
+  };
+  for (let i = 0; i < iso_res.length; i++) {
+    //获取mix和slab的cif信息
+    let iso_is_json = iso_res[i].is_json;
+    let iso_ts_json = iso_res[i].ts_json;
+    let iso_fs_json = iso_res[i].fs_json;
+
+    let iso_mix_slab_arr = [...iso_is_json.mix,...iso_fs_json.slab,...iso_ts_json.mix,...iso_ts_json.slab,...iso_fs_json.mix,...iso_fs_json.slab]
+    let iso_mix_slab_filter = filterArr(iso_mix_slab_arr)
+    if(iso_mix_slab_filter){
+      const iso_mix_slab_sql = splitStr(iso_mix_slab_filter)
+      const iso_mix_slab = await mysql.query({sql:iso_mix_slab_sql})
+      let iso_mix_slab_obj = {}
+      iso_mix_slab.forEach(element=>{
+        element.atom_color = Object.keys(element.atom_color)
+        const e_id = element.id+''
+        iso_mix_slab_obj[e_id] = element
+      })
+      iso_res[i].mix_slab = iso_mix_slab_obj
+    }
+  }
+  let data = { abs: { is_mol, ts_mol, fs_mol, ...info[0] }, co_res, iso_res };
+  ctx.body = util.success(data,'反应信息检索成功')}
+  catch{ctx.body = util.file('反应信息检索失败')}
+};
 module.exports = {
-  findReactions,
+  findReList,
+  findReInfo,
 };
