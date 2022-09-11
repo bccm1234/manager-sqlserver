@@ -260,7 +260,7 @@ const findReInfo = async (ctx) => {
     let data = { abs, co_res, iso_res };
     ctx.body = util.success(data, "反应信息检索成功");
   } catch {
-    ctx.body = util.file("反应信息检索失败");
+    ctx.body = util.fail("反应信息检索失败");
   }
 };
 module.exports = {

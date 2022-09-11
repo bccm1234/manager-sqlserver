@@ -22,9 +22,11 @@
     "koa-static": "^5.0.0",
     "koa-views": "^6.2.0",
     "koa2-cors": "^2.0.6",
+    "minio": "^7.0.32",
     "mongoose": "^5.11.19",
     "mysql2": "^2.3.3",
-    "pug": "^2.0.3"
+    "pug": "^2.0.3",
+    "uuid": "^9.0.0"
   },
   "devDependencies": {
     "eslint": "^8.20.0",
