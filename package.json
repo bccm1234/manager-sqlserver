@@ -26,6 +26,7 @@
     "mongoose": "^5.11.19",
     "mysql2": "^2.3.3",
     "pug": "^2.0.3",
+    "sequelize": "^6.21.6",
     "uuid": "^9.0.0"
   },
   "devDependencies": {
