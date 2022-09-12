@@ -135,12 +135,14 @@ const findReactions = async (ctx) => {
   // table
   r_id_str = "";
   for (let i = 0; i < reaction_arr.length; i++) {
-    r_id_str = `${r_id_str} or r_id = ${reaction_arr[i]["id"]}`;
+    r_id_str = `${r_id_str} or r.id = ${reaction_arr[i]["id"]}`;
   }
   r_id_str = r_id_str.replace("or", "");
+  let table_sql = `select r.id as id, r_type as type,CONCAT("IS",r_is,"->TS",r_ts,"->FS",r_fs) as 'reaction',formula,m.cry_sys,m.spa_gro,m.miller,m.termin,t.h,t.ea  from ( reaction r inner join material m on r.mat = m.id and (${r_id_str}) ) inner join thermo t  on t.r_id = r.id and t.star =0`;
+  let result = await mysql.query({ sql: table_sql });
   ctx.body = {
     reaction_arr,
-    r_id_str,
+    result,
   };
 };
 
