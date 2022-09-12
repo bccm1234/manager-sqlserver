@@ -133,7 +133,11 @@ const findReactions = async (ctx) => {
     reaction_arr = await mysql.query({ sql: selSql });
   }
   // table
-
+  r_id_str = "";
+  for (let i = 0; i < reaction_arr.length; i++) {
+    r_id_str = `${r_id_str} or r_id = ${reaction_arr[i]["id"]}`;
+  }
+  r_id_str = r_id_str.replace("or", "");
   ctx.body = {
     reaction_arr,
     r_id_str,
