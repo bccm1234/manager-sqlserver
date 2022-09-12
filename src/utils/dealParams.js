@@ -81,54 +81,6 @@ const dealInputArrMethodThree = function (input) {
   return str;
 };
 
-const dealReactionParams = async function (params, database, id, num) {
-  // 将string格式数据转array
-  params = eval(params);
-  if (params) {
-    //获取inchi_id
-    let inchi_arr = [];
-    for (let i = 0; i < params.length; i++) {
-      const formula = params[i].formula;
-      const ads = params[i].ads;
-      let for_info = dealInputParams(formula);
-      let sql_info = `${for_info} and ads = ${ads}`;
-      let sql = `select id from inchi where ${sql_info}`;
-      if (id.length != 0) sql = `${sql} and id in (${id})`;
-      const inchi = await database.query({ sql: sql });
-      if (inchi) inchi_arr.push(inchi);
-      else inchi_arr.push([]);
-    }
-    // 判断inchi_id是否为空
-    if (inchi_arr.length > 0) {
-      let group_Str = "";
-      //根据inchi获取g_id
-      for (let i = 0; i < inchi_arr.length; i++) {
-        if (inchi_arr[i].length == 0) {
-          console.error("!!!未找到对应inchi_id!!!");
-          return "";
-        } else {
-          let length = inchi_arr[i].length;
-          let str = `json_contains_path(g_set,'one'`;
-          for (let j = 0; j < length; j++) {
-            str = `${str},'$."${inchi_arr[i][j].id}"'`;
-          }
-          str = `${str})`;
-          group_Str = `${group_Str} ${str} and`;
-        }
-      }
-      if (num)
-        group_Str = `${group_Str} tot_num >=${num[0]} and tot_num <=${num[1]} and`;
-      group_Str = group_Str.slice(0, group_Str.length - 3);
-      group_Str = `select id from mol_group where ${group_Str}`;
-      const res = await database.query({ sql: group_Str });
-      return res;
-    } else {
-      return "";
-    }
-  } else {
-    return "";
-  }
-};
 //materials
 //通过矩阵计算晶胞a、b、c、α、β、γ
 //计算向量的模
@@ -164,49 +116,6 @@ const getCellParam = function (matrix) {
   return [a.toFixed(2), b.toFixed(2), c.toFixed(2), d, e, f];
 };
 
-//reactions
-const joinGId = function (param, state) {
-  let is_sql = "";
-  if (param.length > 0) {
-    for (let i = 0; i < param.length; i++) {
-      is_sql = `${is_sql} or r.${state} = ${param[i]["id"]}`;
-    }
-    is_sql = `(${is_sql})`.replace("or", "");
-    return is_sql;
-  } else {
-    return "";
-  }
-};
-
-const getMol = async function (arr, name, database) {
-  let molArr = [];
-  let inchiArr = [];
-  for (let a = 0; a < arr.length; a++) {
-    const sql = `select g_set from mol_group where id = ${arr[a][name]}`;
-    const res = await database.query({ sql });
-    const inchi = Object.values(res[0])[0];
-    inchiArr.push(inchi);
-  }
-  inchiArr = Array.from(new Set(inchiArr));
-  //获取mol文件
-  for (let i = 0; i < inchiArr.length; i++) {
-    let inchi = inchiArr[i];
-    let sql = "";
-    for (let m in inchi) {
-      sql = `id = ${m}`;
-      const mol = await database.query({
-        sql: `select id,mol from inchi where ${sql}`,
-      });
-      let key = mol[0]["id"];
-      let obj = {};
-      obj[key] = mol[0]["mol"];
-      molArr.push(obj);
-    }
-  }
-  molArr = Array.from(new Set(molArr));
-  return { molArr, inchiArr };
-};
-
 module.exports = {
   dealInputParams,
   //materials
@@ -214,8 +123,4 @@ module.exports = {
   dealInputArrMethodTwo,
   dealInputArrMethodThree,
   getCellParam,
-  //reactions
-  dealReactionParams,
-  joinGId,
-  getMol,
 };

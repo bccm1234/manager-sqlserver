@@ -22,7 +22,7 @@ const findMaterialsAbstracts = async (ctx) => {
     ({ Input, type, cry_sys, spa_gro, miller, termin, sort } =
       ctx.request.query);
   } else {
-    ({ Input, cry_sys, spa_gro, miller, termin } = ctx);
+    ({ formula: Input, cry_sys, spa_gro, miller, termin } = ctx);
   }
   //处理Input
   const inputStr = mater.dealInputParams(Input);
@@ -37,7 +37,7 @@ const findMaterialsAbstracts = async (ctx) => {
     termin,
   };
   Object.keys(containObj).map((item) => {
-    if (containObj[item] == "") {
+    if (containObj[item] == "" || containObj[item] == undefined) {
       delete containObj[item];
     } else {
       typeStr = `${typeStr} and m.${item} = '${containObj[item]}'`;
@@ -51,9 +51,9 @@ const findMaterialsAbstracts = async (ctx) => {
   //拼接terms
   terms = `${terms} ${inputStr} ${typeStr} ${sortStr}`;
   const matRes = await crud.complexFind(adsListContain, "material m", terms);
-  const res = matRes;
+  const res = matRes.length != 0 ? matRes : "";
   if (res && ctx.request) {
-    ctx.body = util.success(res, "检索成功");
+    ctx.body = util.success(matRes, "检索成功");
   } else if (ctx.request) {
     ctx.body = util.fail("未能检索到相关材料，请重新输入");
   } else {

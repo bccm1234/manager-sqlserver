@@ -1,4 +1,4 @@
-const util = require("../utils/util");
+const util = require("../src/utils/util");
 const Data = require("../models/dataSchema");
 const fs = require("fs");
 const path = require("path");

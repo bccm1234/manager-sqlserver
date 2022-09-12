@@ -4,30 +4,31 @@ const json = require("koa-json");
 const onerror = require("koa-onerror");
 const bodyparser = require("koa-bodyparser");
 const logger = require("koa-logger");
-const log4js = require("./utils/log4j");
+const log4js = require("./src/utils/log4j");
 const router = require("koa-router")();
 // const jwt = require("jsonwebtoken");
 // const koajwt = require("koa-jwt");
-const util = require("./utils/util");
-const materials = require("./routes/materials")
-const reactions = require("./routes/reactions")
-const cors = require("koa2-cors")
+const util = require("./src/utils/util");
+const materials = require("./src/routes/materials");
+const reactions = require("./src/routes/reactions");
+const cors = require("koa2-cors");
 // error handler
 onerror(app);
 
-app.use(cors())
+app.use(cors());
 // middlewares
 app.use(
   bodyparser({
-    enableTypes: ["json", "form", "text"]
+    enableTypes: ["json", "form", "text"],
   })
 );
 app.use(json());
+// eslint-disable-next-line no-undef
 app.use(require("koa-static")(__dirname + "/public"));
 
 app.use(logger());
 
-// logger 
+// logger
 app.use(async (ctx, next) => {
   log4js.info(`get params:${JSON.stringify(ctx.request.query)}`);
   log4js.info(`post params:${JSON.stringify(ctx.request.body)}`);

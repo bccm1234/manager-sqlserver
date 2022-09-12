@@ -9,7 +9,7 @@ const CODE = {
   USER_ACCOUNT_ERROR: 20001, //账号或密码错误
   USER_LOGIN_ERROR: 30001, // 用户未登录
   BUSINESS_ERROR: 40001, //业务请求失败
-  AUTH_ERROR: 500001 // 认证失败或TOKEN过期
+  AUTH_ERROR: 500001, // 认证失败或TOKEN过期
 };
 module.exports = {
   /**
@@ -24,9 +24,9 @@ module.exports = {
     return {
       page: {
         pageNum,
-        pageSize
+        pageSize,
       },
-      skipIndex
+      skipIndex,
     };
   },
   success(data = "", msg = "", code = CODE.SUCCESS) {
@@ -34,7 +34,7 @@ module.exports = {
     return {
       code,
       data,
-      msg
+      msg,
     };
   },
   fail(msg = "", code = CODE.BUSINESS_ERROR, data = "") {
@@ -42,7 +42,7 @@ module.exports = {
     return {
       code,
       data,
-      msg
+      msg,
     };
   },
   CODE,
@@ -86,7 +86,7 @@ module.exports = {
       "d+": date.getDate(),
       "h+": date.getHours(),
       "m+": date.getMinutes(),
-      "s+": date.getSeconds()
+      "s+": date.getSeconds(),
     };
     for (let k in o) {
       if (new RegExp(`(${k})`).test(fmt)) {
@@ -98,5 +98,5 @@ module.exports = {
       }
     }
     return fmt;
-  }
+  },
 };
