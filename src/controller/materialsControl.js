@@ -2,6 +2,8 @@ const util = require("../utils/util");
 const crud = require("../db/crud");
 const mater = require("../utils/dealParams");
 const mysql = require("../db/config");
+const Minio = require('minio')
+const {minioClient} = require("../db/minio");
 
 const adsListContain = "id,mat_type,formula,cry_sys,spa_gro,miller,termin";
 const optiContain =
@@ -87,13 +89,32 @@ const findMaterialDetails = async (ctx) => {
 //测试接口
 const tryin = async (ctx) => {
   const { id } = ctx.request.query;
-  const test = JSON.parse(id);
-  console.log(typeof test[0][0]);
-  console.log(test[0][0]);
-  const sql = `select * from formula where f_id in (1,2,3);`;
-  const res = await mysql.query({ sql });
+  const file = "C:/Users/Liud/Desktop/projects/server/mol/1.text";
+  var minioClient = new Minio.Client({
+    endPoint: 'play.min.io',
+    port: 9000,
+    useSSL: true,
+    accessKey: 'Q3AM3UQ867SPQQA43P2F',
+    secretKey: 'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG'
+})
+    var metaData = {
+      "Content-Type": "application/octet-stream",
+      "X-Amz-Meta-Testing": 1234,
+      example: 5678,
+    };
+    // Using fPutObject API upload your file to the bucket europetrip.
+    minioClient.fPutObject(
+      "europetrip",
+      "1.text",
+      file,
+      metaData,
+      function (err, etag) {
+        if (err) return console.log(err);
+        console.log("File uploaded successfully.");
+      }
+    );
   ctx.body = {
-    res,
+    a:1
   };
 };
 module.exports = {

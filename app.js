@@ -8,9 +8,11 @@ const log4js = require("./src/utils/log4j");
 const router = require("koa-router")();
 // const jwt = require("jsonwebtoken");
 // const koajwt = require("koa-jwt");
-const util = require("./src/utils/util");
-const materials = require("./src/routes/materials");
-const reactions = require("./src/routes/reactions");
+const util = require("./utils/util");
+const materials = require("./routes/materials");
+const reactions = require("./routes/reactions");
+const mol2Inchi = require("./routes/mol2inchi");
+const demo = require("./routes/demo");
 const cors = require("koa2-cors");
 // error handler
 onerror(app);
@@ -52,6 +54,8 @@ router.prefix("/api");
 
 router.use(materials.routes(), materials.allowedMethods());
 router.use(reactions.routes(), reactions.allowedMethods());
+router.use(mol2Inchi.routes(), mol2Inchi.allowedMethods());
+router.use(demo.routes(), mol2Inchi.allowedMethods());
 app.use(router.routes(), router.allowedMethods());
 
 // error-handling
