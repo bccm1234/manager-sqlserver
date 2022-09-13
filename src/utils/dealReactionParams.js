@@ -125,35 +125,6 @@ const joinGId = function (param, state) {
   }
 };
 
-const getMol = async function (arr, name, database) {
-  let molArr = [];
-  let inchiArr = [];
-  for (let a = 0; a < arr.length; a++) {
-    const sql = `select g_set from mol_group where id = ${arr[a][name]}`;
-    const res = await database.query({ sql });
-    const inchi = Object.values(res[0])[0];
-    inchiArr.push(inchi);
-  }
-  inchiArr = Array.from(new Set(inchiArr));
-  //获取mol文件
-  for (let i = 0; i < inchiArr.length; i++) {
-    let inchi = inchiArr[i];
-    let sql = "";
-    for (let m in inchi) {
-      sql = `id = ${m}`;
-      const mol = await database.query({
-        sql: `select id,mol from inchi where ${sql}`,
-      });
-      let key = mol[0]["id"];
-      let obj = {};
-      obj[key] = mol[0]["mol"];
-      molArr.push(obj);
-    }
-  }
-  molArr = Array.from(new Set(molArr));
-  return { molArr, inchiArr };
-};
-
 const dealFilterSelect = async function (sel, database) {
   let value = Object.entries(sel);
   if (value.length > 0) {
@@ -185,13 +156,76 @@ const dealFilterSelect = async function (sel, database) {
   }
 };
 
+const findGroupArr = async function (group, rid, database) {
+  let group_sql = `select distinct r.r_${group}  as id  from reaction r where ${rid}`;
+  let group_id = await database.query({ sql: group_sql });
+  let group_arr = [];
+  for (let i = 0; i < group_id.length; i++) {
+    let g_id = group_id[i].id;
+    let group_obj = { type: group };
+    Object.assign(group_obj, { key: `${group}${g_id}`, values: [] });
+    let g_sql = `select g_set from mol_group mg where mg.id = ${g_id}`;
+    let g_res = await database.query({ sql: g_sql });
+    let inchi_arr = g_res[0]["g_set"];
+    for (let j in inchi_arr) {
+      let inchi = `select mol as molfile ,ads from inchi where id = ${j}`;
+      let inchi_res = await database.query({ sql: inchi });
+      group_obj.values.push(inchi_res[0]);
+    }
+    group_arr.push(group_obj);
+  }
+  return group_arr;
+};
+
+const findInputArr = async function (group, rid, database) {
+  let group_sql = `select distinct r.r_${group}  as id  from reaction r where ${rid}`;
+  let group_id = await database.query({ sql: group_sql });
+  let group_arr = [];
+  let input_set = new Set();
+  for (let i = 0; i < group_id.length; i++) {
+    let g_id = group_id[i].id;
+    let g_sql = `select g_set from mol_group mg where mg.id = ${g_id}`;
+    let g_res = await database.query({ sql: g_sql });
+    let inchi_arr = g_res[0]["g_set"];
+    for (let j in inchi_arr) {
+      let inchi = `select formula from inchi where id = ${j}`;
+      let inchi_res = await database.query({ sql: inchi });
+      let input_formula = joinInput(inchi_res[0].formula);
+      input_set.add(input_formula);
+    }
+  }
+  return Array.from(input_set);
+};
+
+const joinInput = function (param) {
+  let input = "";
+  for (let ele in param) {
+    let num = param[ele] != 1 ? param[ele] : "";
+    input = `${input}${ele}${num}`;
+  }
+  return input;
+};
+
+const findInchiArr = async function (group, input, database) {
+  let input_arr = [];
+  for (let i = 0; i < input.length; i++) {
+    let input_obj = { type: group, key: input[i], values: "" };
+    let input_info = dealParams.dealInputParams(input[i]);
+    let sql = `select id,mol as molfile from inchi where ${input_info}`;
+    let res = await database.query({ sql });
+    input_obj.values = res;
+    input_arr.push(input_obj);
+  }
+  return input_arr;
+};
 module.exports = {
-  //reactions
   dealReactionParams,
   dealReactionInput,
   dealReactionIdInput,
   dealGroupIdInput,
   joinGId,
-  getMol,
   dealFilterSelect,
+  findGroupArr,
+  findInputArr,
+  findInchiArr,
 };
