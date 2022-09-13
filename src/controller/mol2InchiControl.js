@@ -13,7 +13,7 @@ const mol2Inchi = async (ctx) => {
     "inFilePathAndDocName": address + ".mol"
   })
   if(switchRes.data.operate  === 'success') {
-    const res = fs.readFileSync(address + ".txt",'utf8')
+    const res = fs.readFileSync(address + ".mol.txt",'utf8')
     if(res) {
       ctx.body = util.success(res,'inchi查询成功')
     }

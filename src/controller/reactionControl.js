@@ -5,7 +5,24 @@ const util = require("../utils/util");
 const findReactions = async (ctx) => {
   let { type, input, filters } = ctx.request.body;
   // Input部分
-  let is, ts, fs, cat, r_id, is_id, ts_id, fs_id, mat_id, joinSql, reaction_arr;
+  let is,
+    ts,
+    fs,
+    formula,
+    spa_gro,
+    cry_sys,
+    termin,
+    miller,
+    r_id,
+    is_id,
+    ts_id,
+    fs_id,
+    mat_id,
+    joinSql,
+    reaction_arr,
+    result,
+    group_arr,
+    inchi_arr;
   let is_num, fs_num, h_min, h_max, ea_min, ea_max, is_sel, ts_sel, fs_sel;
   if (filters) {
     ({ is_num, fs_num, h_min, h_max, ea_min, ea_max, is_sel, ts_sel, fs_sel } =
@@ -17,17 +34,32 @@ const findReactions = async (ctx) => {
   // 分类
   switch (type) {
     case "reaction":
-      ({ is, ts, fs, catalyst: cat } = input);
-      joinSql = await dealReactionParams.dealReactionInput(
-        is,
-        ts,
-        fs,
-        cat,
-        mysql
-      );
-      if (joinSql !== "Not Found" && joinSql !== "Type Error")
-        reaction_arr = await mysql.query({ sql: joinSql });
-      else if (joinSql == "Type Error") {
+      ({ is, ts, fs, formula, spa_gro, cry_sys, miller, termin } = input);
+      let cat = { Input: formula, spa_gro, cry_sys, miller, termin };
+      try {
+        joinSql = await dealReactionParams.dealReactionInput(
+          is,
+          ts,
+          fs,
+          cat,
+          mysql
+        );
+      } catch (e) {
+        ctx.body = util.fail("处理Formula时内部错误", 10005, e);
+        return false;
+      }
+      if (joinSql === "DB Error") {
+        ctx.body = util.fail("处理Formula时内部数据库查询错误", 10004);
+        return false;
+      }
+      if (joinSql !== "Not Found" && joinSql !== "Type Error") {
+        try {
+          reaction_arr = await mysql.query({ sql: joinSql });
+        } catch (e) {
+          ctx.body = util.fail("查询时数据库错误", 10006, e);
+          return false;
+        }
+      } else if (joinSql == "Type Error") {
         ctx.body = util.fail("查询失败，未输入数据", 10002);
         return false;
       } else {
@@ -37,10 +69,20 @@ const findReactions = async (ctx) => {
       break;
     case "reaction_id":
       ({ r_id } = input);
-      joinSql = dealReactionParams.dealReactionIdInput(r_id);
-      if (joinSql !== "Not Found" && joinSql !== "Type Error")
-        reaction_arr = await mysql.query({ sql: joinSql });
-      else if (joinSql == "Type Error") {
+      try {
+        joinSql = dealReactionParams.dealReactionIdInput(r_id);
+      } catch (e) {
+        ctx.body = util.fail("处理ReactionID时内部错误", 10005, e);
+        return false;
+      }
+      if (joinSql !== "Not Found" && joinSql !== "Type Error") {
+        try {
+          reaction_arr = await mysql.query({ sql: joinSql });
+        } catch (e) {
+          ctx.body = util.fail("查询时数据库错误", 10006, e);
+          return false;
+        }
+      } else if (joinSql == "Type Error") {
         ctx.body = util.fail("查询失败，未输入数据", 10002);
         return false;
       } else {
@@ -50,15 +92,25 @@ const findReactions = async (ctx) => {
       break;
     case "group_id":
       ({ is_id, ts_id, fs_id, mat_id } = input);
-      joinSql = dealReactionParams.dealGroupIdInput(
-        is_id,
-        ts_id,
-        fs_id,
-        mat_id
-      );
-      if (joinSql !== "Not Found" && joinSql !== "Type Error")
-        reaction_arr = await mysql.query({ sql: joinSql });
-      else if (joinSql == "Type Error") {
+      try {
+        joinSql = dealReactionParams.dealGroupIdInput(
+          is_id,
+          ts_id,
+          fs_id,
+          mat_id
+        );
+      } catch (e) {
+        ctx.body = util.fail("处理GroupID时内部错误", 10005, e);
+        return false;
+      }
+      if (joinSql !== "Not Found" && joinSql !== "Type Error") {
+        try {
+          reaction_arr = await mysql.query({ sql: joinSql });
+        } catch (e) {
+          ctx.body = util.fail("查询时数据库错误", 10006, e);
+          return false;
+        }
+      } else if (joinSql == "Type Error") {
         ctx.body = util.fail("查询失败，未输入数据", 10002);
         return false;
       } else {
@@ -70,6 +122,7 @@ const findReactions = async (ctx) => {
       break;
     default:
       ctx.body = util.fail("请输入类型", 10001);
+      return false;
       break;
   }
   if (JSON.stringify(reaction_arr) == "[]") {
@@ -89,7 +142,12 @@ const findReactions = async (ctx) => {
     if (h_max) e_sql = `${e_sql} and h <= ${h_max}`;
     if (ea_min) e_sql = `${e_sql} and ea >= ${h_min}`;
     if (ea_max) e_sql = `${e_sql} and ea <= ${h_max}`;
-    reaction_arr = await mysql.query({ sql: e_sql });
+    try {
+      reaction_arr = await mysql.query({ sql: e_sql });
+    } catch (e) {
+      ctx.body = util.fail("筛选数据时数据库错误", 10006, e);
+      return false;
+    }
   }
   if (is_num || fs_num) {
     r_id_str = "";
@@ -106,7 +164,12 @@ const findReactions = async (ctx) => {
       fs_sql = `select distinct r.id as id from reaction r inner join mol_group mg on r.r_fs = mg.id where ${r_id_str} and tot_num <= ${fs_num[1]} and tot_num >= ${fs_num[0]}`;
       n_sql = `${n_sql} and id in (${fs_sql})`;
     }
-    reaction_arr = await mysql.query({ sql: n_sql });
+    try {
+      reaction_arr = await mysql.query({ sql: n_sql });
+    } catch (e) {
+      ctx.body = util.fail("筛选数据时数据库错误", 10006, e);
+      return false;
+    }
   }
   if (is_sel || ts_sel || fs_sel) {
     let is_sel_res, ts_sel_res, fs_sel_res, is_sel_sql, ts_sel_sql, fs_sel_sql;
@@ -136,7 +199,12 @@ const findReactions = async (ctx) => {
     }
     r_id_str = r_id_str.replace("or", "");
     selSql = `${selSql} and (${r_id_str})`;
-    reaction_arr = await mysql.query({ sql: selSql });
+    try {
+      reaction_arr = await mysql.query({ sql: selSql });
+    } catch (e) {
+      ctx.body = util.fail("筛选数据时数据库错误", 10006, e);
+      return false;
+    }
   }
   // table
   r_id_str = "";
@@ -145,54 +213,64 @@ const findReactions = async (ctx) => {
   }
   r_id_str = r_id_str.replace("or", "");
   let table_sql = `select r.id as id, r_type as type,CONCAT("IS",r_is,"->TS",r_ts,"->FS",r_fs) as 'reaction',formula,m.cry_sys,m.spa_gro,m.miller,m.termin,t.h,t.ea  from ( reaction r inner join material m on r.mat = m.id and (${r_id_str}) ) inner join thermo t  on t.r_id = r.id and t.star =0`;
-  let result = await mysql.query({ sql: table_sql });
-  let is_group_arr = await dealReactionParams.findGroupArr(
-    "IS",
-    r_id_str,
-    mysql
-  );
-  let ts_group_arr = await dealReactionParams.findGroupArr(
-    "TS",
-    r_id_str,
-    mysql
-  );
-  let fs_group_arr = await dealReactionParams.findGroupArr(
-    "FS",
-    r_id_str,
-    mysql
-  );
-  let group_arr = [...is_group_arr, ...ts_group_arr, ...fs_group_arr];
-  let is_input_arr = await dealReactionParams.findInputArr(
-    "IS",
-    r_id_str,
-    mysql
-  );
-  let is_inchi_arr = await dealReactionParams.findInchiArr(
-    "IS",
-    is_input_arr,
-    mysql
-  );
-  let ts_input_arr = await dealReactionParams.findInputArr(
-    "TS",
-    r_id_str,
-    mysql
-  );
-  let ts_inchi_arr = await dealReactionParams.findInchiArr(
-    "TS",
-    ts_input_arr,
-    mysql
-  );
-  let fs_input_arr = await dealReactionParams.findInputArr(
-    "FS",
-    r_id_str,
-    mysql
-  );
-  let fs_inchi_arr = await dealReactionParams.findInchiArr(
-    "FS",
-    fs_input_arr,
-    mysql
-  );
-  let inchi_arr = [...is_inchi_arr, ...ts_inchi_arr, ...fs_inchi_arr];
+  try {
+    result = await mysql.query({ sql: table_sql });
+  } catch (e) {
+    ctx.body = util.fail("返回结果时数据库错误", 10006, e);
+    return false;
+  }
+  try {
+    let is_group_obj = await dealReactionParams.findGroupArr(
+      "IS",
+      r_id_str,
+      mysql
+    );
+    let ts_group_obj = await dealReactionParams.findGroupArr(
+      "TS",
+      r_id_str,
+      mysql
+    );
+    let fs_group_obj = await dealReactionParams.findGroupArr(
+      "FS",
+      r_id_str,
+      mysql
+    );
+    group_arr = [is_group_obj, ts_group_obj, fs_group_obj];
+    let is_input_arr = await dealReactionParams.findInputArr(
+      "IS",
+      r_id_str,
+      mysql
+    );
+    let is_inchi_arr = await dealReactionParams.findInchiArr(
+      "IS",
+      is_input_arr,
+      mysql
+    );
+    let ts_input_arr = await dealReactionParams.findInputArr(
+      "TS",
+      r_id_str,
+      mysql
+    );
+    let ts_inchi_arr = await dealReactionParams.findInchiArr(
+      "TS",
+      ts_input_arr,
+      mysql
+    );
+    let fs_input_arr = await dealReactionParams.findInputArr(
+      "FS",
+      r_id_str,
+      mysql
+    );
+    let fs_inchi_arr = await dealReactionParams.findInchiArr(
+      "FS",
+      fs_input_arr,
+      mysql
+    );
+    inchi_arr = [...is_inchi_arr, ...ts_inchi_arr, ...fs_inchi_arr];
+  } catch (e) {
+    ctx.body = util.fail("反查时内部错误", 10006, e);
+    return false;
+  }
   ctx.body = util.success(
     {
       reaction_arr,

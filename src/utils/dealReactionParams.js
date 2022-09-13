@@ -1,3 +1,4 @@
+const { CITEXT } = require("sequelize");
 const materialsControl = require("../controller/materialsControl");
 const dealParams = require("./dealParams");
 
@@ -10,22 +11,34 @@ const dealReactionParams = async function (params, database) {
       inchi;
     for (let i = 0; i < params.length; i++) {
       const type = params[i].select[0];
-      const ads = params[i].select[1];
+      const ads = parseInt(params[i].select[1]);
       const value = params[i].value;
       switch (type) {
-        case "formula":
+        case "Formula":
           let for_info = dealParams.dealInputParams(value);
           let sql_info = `${for_info} and ads = ${ads}`;
           sql = `select id from inchi where ${sql_info}`;
-          inchi = await database.query({ sql: sql });
+          try {
+            inchi = await database.query({ sql: sql });
+          } catch (e) {
+            return "DB Error";
+          }
           break;
-        case "inchi":
+        case "InChI":
           sql = `select id from inchi where inchi = '${value}' and ads = ${ads}`;
-          inchi = await database.query({ sql: sql });
+          try {
+            inchi = await database.query({ sql: sql });
+          } catch (e) {
+            return "DB Error";
+          }
           break;
-        case "inchikey":
+        case "InChIKey":
           sql = `select id from inchi where inchikey = '${value}' and ads = ${ads}`;
-          inchi = await database.query({ sql: sql });
+          try {
+            inchi = await database.query({ sql: sql });
+          } catch (e) {
+            return "DB Error";
+          }
           break;
         case "name":
           break;
@@ -39,8 +52,7 @@ const dealReactionParams = async function (params, database) {
       //根据inchi获取g_id
       for (let i = 0; i < inchi_arr.length; i++) {
         if (inchi_arr[i].length == 0) {
-          console.error("!!!未找到对应inchi_id!!!");
-          return "";
+          return [];
         } else {
           let length = inchi_arr[i].length;
           let str = `json_contains_path(g_set,'one'`;
@@ -54,35 +66,45 @@ const dealReactionParams = async function (params, database) {
       group_Str = group_Str.slice(0, group_Str.length - 3);
       group_Str = `select id from mol_group where ${group_Str}`;
       // console.log(group_Str);
-      const res = await database.query({ sql: group_Str });
-      return res;
+      try {
+        const res = await database.query({ sql: group_Str });
+        return res;
+      } catch (e) {
+        return "DB Error";
+      }
     } else {
-      return "";
+      return [];
     }
   } else {
-    return "";
+    return [];
   }
 };
 const dealReactionInput = async function (is, ts, fs, cat, database) {
   //获取is/ts/fs对应的group_id
-  // console.log(is, ts, fs, cat);
+  console.log(is, ts, fs, cat);
   if (!is && !ts && !fs && !cat) return "Type Error";
   let is_res, ts_res, fs_res, mat_res, is_sql, ts_sql, fs_sql, mat_sql;
-  if (is) is_res = await dealReactionParams(is, database);
-  if (ts) ts_res = await dealReactionParams(ts, database);
-  if (fs) fs_res = await dealReactionParams(fs, database);
+  if (is[0].select.length == 2) is_res = await dealReactionParams(is, database);
+  if (ts[0].select.length == 2) ts_res = await dealReactionParams(ts, database);
+  if (fs[0].select.length == 2) fs_res = await dealReactionParams(fs, database);
   if (cat) mat_res = await materialsControl.findMaterialsAbstracts(cat);
-  // console.log(is_res, ts_res, fs_res, mat_res);
-  if (is_res === "" || JSON.stringify(is_res) === "[]") return "Not Found";
+  console.log(is_res, ts_res, fs_res, mat_res);
+  if (Array.isArray(is_res) && is_res.length == 0) {
+    return "Not Found";
+  } else if (is_res === "DB Error") return "DB Error";
   else is_sql = joinGId(is_res, "r_is");
-  if (ts_res === "" || JSON.stringify(ts_res) === "[]") return "Not Found";
+  if (Array.isArray(ts_res) && ts_res.length == 0) {
+    return "Not Found";
+  } else if (ts_res === "DB Error") return "DB Error";
   else ts_sql = joinGId(ts_res, "r_ts");
-  if (fs_res === "" || JSON.stringify(fs_res) === "[]") return "Not Found";
+  if (Array.isArray(fs_res) && fs_res.length == 0) {
+    return "Not Found";
+  } else if (fs_res === "DB Error") return "DB Error";
   else fs_sql = joinGId(fs_res, "r_fs");
   if (mat_res === "") return "Not Found";
   else mat_sql = joinGId(mat_res, "mat");
   const g_id_arr = [is_sql, ts_sql, fs_sql, mat_sql];
-  // console.log(g_id_arr);
+  console.log(g_id_arr);
   let joinSql = "";
   for (let i = 0; i < g_id_arr.length; i++) {
     if (g_id_arr[i]) {
@@ -90,6 +112,7 @@ const dealReactionInput = async function (is, ts, fs, cat, database) {
     }
   }
   joinSql = `select * from reaction r where ${joinSql.replace("and", "")};`;
+  console.log(joinSql);
   return joinSql;
 };
 const dealReactionIdInput = function (id) {
@@ -159,22 +182,22 @@ const dealFilterSelect = async function (sel, database) {
 const findGroupArr = async function (group, rid, database) {
   let group_sql = `select distinct r.r_${group}  as id  from reaction r where ${rid}`;
   let group_id = await database.query({ sql: group_sql });
-  let group_arr = [];
+  let group_obj = { type: group };
+  Object.assign(group_obj, { data: [] });
   for (let i = 0; i < group_id.length; i++) {
     let g_id = group_id[i].id;
-    let group_obj = { type: group };
-    Object.assign(group_obj, { key: `${group}${g_id}`, values: [] });
+    let data_obj = { title: `${group}${g_id}`, values: [] };
+    group_obj.data.push(data_obj);
     let g_sql = `select g_set from mol_group mg where mg.id = ${g_id}`;
     let g_res = await database.query({ sql: g_sql });
     let inchi_arr = g_res[0]["g_set"];
     for (let j in inchi_arr) {
       let inchi = `select mol as molfile ,ads from inchi where id = ${j}`;
       let inchi_res = await database.query({ sql: inchi });
-      group_obj.values.push(inchi_res[0]);
+      data_obj.values.push(inchi_res[0]);
     }
-    group_arr.push(group_obj);
   }
-  return group_arr;
+  return group_obj;
 };
 
 const findInputArr = async function (group, rid, database) {

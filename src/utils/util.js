@@ -11,10 +11,7 @@ const CODE = {
   BUSINESS_ERROR: 40001, //业务请求失败
   AUTH_ERROR: 500001, // 认证失败或TOKEN过期
 };
-// 状态码
-// 10001 输入类型为空
-// 10002 未输入数据
-// 10003 未找到数据
+
 module.exports = {
   /**
    * 分页结构封装
