@@ -140,9 +140,58 @@ const findReactions = async (ctx) => {
   r_id_str = r_id_str.replace("or", "");
   let table_sql = `select r.id as id, r_type as type,CONCAT("IS",r_is,"->TS",r_ts,"->FS",r_fs) as 'reaction',formula,m.cry_sys,m.spa_gro,m.miller,m.termin,t.h,t.ea  from ( reaction r inner join material m on r.mat = m.id and (${r_id_str}) ) inner join thermo t  on t.r_id = r.id and t.star =0`;
   let result = await mysql.query({ sql: table_sql });
+  let is_group_arr = await dealReactionParams.findGroupArr(
+    "IS",
+    r_id_str,
+    mysql
+  );
+  let ts_group_arr = await dealReactionParams.findGroupArr(
+    "TS",
+    r_id_str,
+    mysql
+  );
+  let fs_group_arr = await dealReactionParams.findGroupArr(
+    "FS",
+    r_id_str,
+    mysql
+  );
+  let group_arr = [...is_group_arr, ...ts_group_arr, ...fs_group_arr];
+  let is_input_arr = await dealReactionParams.findInputArr(
+    "IS",
+    r_id_str,
+    mysql
+  );
+  let is_inchi_arr = await dealReactionParams.findInchiArr(
+    "IS",
+    is_input_arr,
+    mysql
+  );
+  let ts_input_arr = await dealReactionParams.findInputArr(
+    "TS",
+    r_id_str,
+    mysql
+  );
+  let ts_inchi_arr = await dealReactionParams.findInchiArr(
+    "TS",
+    ts_input_arr,
+    mysql
+  );
+  let fs_input_arr = await dealReactionParams.findInputArr(
+    "FS",
+    r_id_str,
+    mysql
+  );
+  let fs_inchi_arr = await dealReactionParams.findInchiArr(
+    "FS",
+    fs_input_arr,
+    mysql
+  );
+  let inchi_arr = [...is_inchi_arr, ...ts_inchi_arr, ...fs_inchi_arr];
   ctx.body = {
     reaction_arr,
     result,
+    group_arr,
+    inchi_arr,
   };
 };
 
