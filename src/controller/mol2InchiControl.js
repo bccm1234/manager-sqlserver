@@ -10,7 +10,7 @@ const mol2Inchi = async (ctx) => {
     fs.writeFileSync(address + ".mol",molStr,'utf8');
     const switchRes = await axios.post('http://43.142.96.10:9001/dpb/execShellScript',{
     "shellScriptPath": "mol2stdinchi.sh",
-    "inFilePathAndDocName": "/home/centos/mol/HC.mol"
+    "inFilePathAndDocName": address + ".mol"
   })
   if(switchRes.data.operate  === 'success') {
     const res = fs.readFileSync(address + ".txt",'utf8')
