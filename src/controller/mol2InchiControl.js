@@ -5,17 +5,27 @@ const { v4: uuidv4 } = require("uuid");
 const mol2Inchi = async (ctx) => {
   const { molStr } = ctx.request.query;
   const uuid = uuidv4()
-  fs.writeFileSync(
-    "mol/" + uuid + ".mol",
-    molStr,
-    'utf8'
-  );
-  const switchRes = await axios.post('http://43.142.96.10:9001/dpb/execShellScript',{
+  const address = `/home/centos/mol/${uuid}`
+  try{
+    fs.writeFileSync(address + ".mol",molStr,'utf8');
+    const switchRes = await axios.post('http://43.142.96.10:9001/dpb/execShellScript',{
     "shellScriptPath": "mol2stdinchi.sh",
     "inFilePathAndDocName": "/home/centos/mol/HC.mol"
   })
-  
-  ctx.body = { molStr };
+  if(switchRes.data.operate  === 'success') {
+    const res = fs.readFileSync(address + ".txt",'utf8')
+    if(res) {
+      ctx.body = util.success(res,'inchi查询成功')
+    }
+    else {
+      ctx.body = util.fail('inchi查询失败')
+    }
+  } else {
+    ctx.body = util.fail('inhi查询失败')
+  }}
+  catch{
+    ctx.body = util.fail('inchi查询失败')
+  }
 };
 module.exports = {
   mol2Inchi,
