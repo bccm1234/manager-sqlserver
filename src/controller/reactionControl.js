@@ -6,8 +6,11 @@ const findReactions = async (ctx) => {
   let { type, input, filters } = ctx.request.body;
   // Input部分
   let is, ts, fs, cat, r_id, is_id, ts_id, fs_id, mat_id, joinSql, reaction_arr;
-  let { is_num, fs_num, h_min, h_max, ea_min, ea_max, is_sel, ts_sel, fs_sel } =
-    filters;
+  let is_num, fs_num, h_min, h_max, ea_min, ea_max, is_sel, ts_sel, fs_sel;
+  if (filters) {
+    ({ is_num, fs_num, h_min, h_max, ea_min, ea_max, is_sel, ts_sel, fs_sel } =
+      filters);
+  }
   //输入数据处理
   if (is_num) is_num = eval(is_num);
   if (fs_num) fs_num = eval(fs_num);
@@ -25,10 +28,10 @@ const findReactions = async (ctx) => {
       if (joinSql !== "Not Found" && joinSql !== "Type Error")
         reaction_arr = await mysql.query({ sql: joinSql });
       else if (joinSql == "Type Error") {
-        ctx.body = "查询失败，类型错误";
+        ctx.body = util.fail("查询失败，未输入数据", 10002);
         return false;
       } else {
-        ctx.body = "查询失败，未能找到";
+        ctx.body = util.fail("查询失败，未能找到", 10003);
         return false;
       }
       break;
@@ -38,10 +41,10 @@ const findReactions = async (ctx) => {
       if (joinSql !== "Not Found" && joinSql !== "Type Error")
         reaction_arr = await mysql.query({ sql: joinSql });
       else if (joinSql == "Type Error") {
-        ctx.body = "查询失败，类型错误";
+        ctx.body = util.fail("查询失败，未输入数据", 10002);
         return false;
       } else {
-        ctx.body = "查询失败，未能找到";
+        ctx.body = util.fail("查询失败，未能找到", 10003);
         return false;
       }
       break;
@@ -56,18 +59,21 @@ const findReactions = async (ctx) => {
       if (joinSql !== "Not Found" && joinSql !== "Type Error")
         reaction_arr = await mysql.query({ sql: joinSql });
       else if (joinSql == "Type Error") {
-        ctx.body = "查询失败，类型错误";
+        ctx.body = util.fail("查询失败，未输入数据", 10002);
         return false;
       } else {
-        ctx.body = "查询失败，未能找到";
+        ctx.body = util.fail("查询失败，未能找到", 10003);
         return false;
       }
       break;
     case "json":
       break;
+    default:
+      ctx.body = util.fail("请输入类型", 10001);
+      break;
   }
   if (JSON.stringify(reaction_arr) == "[]") {
-    ctx.body = "查询失败，未能找到";
+    ctx.body = util.fail("查询失败，未能找到", 10003);
     return false;
   }
   // filters部分
@@ -187,12 +193,15 @@ const findReactions = async (ctx) => {
     mysql
   );
   let inchi_arr = [...is_inchi_arr, ...ts_inchi_arr, ...fs_inchi_arr];
-  ctx.body = {
-    reaction_arr,
-    result,
-    group_arr,
-    inchi_arr,
-  };
+  ctx.body = util.success(
+    {
+      reaction_arr,
+      result,
+      group_arr,
+      inchi_arr,
+    },
+    "查询成功"
+  );
 };
 const findReInfo = async (ctx) => {
   const { id } = ctx.request.query;
@@ -246,9 +255,8 @@ const findReInfo = async (ctx) => {
     const info_sql = `select r_type,r_is,r_ts,r_fs,formula catalyst_formula,cry_sys,spa_gro,miller,termin from reaction r,material m where r.id = ${id} and r.mat = m.id;`;
     const info = await mysql.query({ sql: info_sql });
     abs.group = [info[0].r_is, info[0].r_ts, info[0].r_fs];
-    delete info[0].r_is
-    delete info[0].r_ts,
-    delete info[0].r_fs
+    delete info[0].r_is;
+    delete info[0].r_ts, delete info[0].r_fs;
     Object.assign(abs, info[0]);
     //co
     const co_sql = `select is_json,ts_json,fs_json,is_energy,ts_energy,fs_energy,h,ea,source from thermo t where t.r_id = ${id} and thermo_type = 'co' order by star;`;
@@ -263,7 +271,7 @@ const findReInfo = async (ctx) => {
       let is_mix = filterArr(is_json.mix);
       let ts_mix = filterArr(ts_json.mix);
       let fs_mix = filterArr(fs_json.mix);
-      let module = []
+      let module = [];
       if (is_mix) {
         const mix_cif_sql = `select cif from vaspjob where id in ${is_mix};`;
         let mix_cif = (await mysql.query({ sql: mix_cif_sql })).map(
@@ -271,11 +279,11 @@ const findReInfo = async (ctx) => {
             return element.cif;
           }
         );
-        let isObj={
-          type:"IS",
-          cif:mix_cif[0]
-        }
-        module.push(isObj)
+        let isObj = {
+          type: "IS",
+          cif: mix_cif[0],
+        };
+        module.push(isObj);
       }
       if (ts_mix) {
         const mix_cif_sql = `select cif from vaspjob where id in ${ts_mix};`;
@@ -284,11 +292,11 @@ const findReInfo = async (ctx) => {
             return element.cif;
           }
         );
-        let tsObj={
-          type:"TS",
-          cif:mix_cif[0]
-        }
-        module.push(tsObj)
+        let tsObj = {
+          type: "TS",
+          cif: mix_cif[0],
+        };
+        module.push(tsObj);
       }
       if (fs_mix) {
         const mix_cif_sql = `select cif from vaspjob where id in ${fs_mix};`;
@@ -297,13 +305,13 @@ const findReInfo = async (ctx) => {
             return element.cif;
           }
         );
-        let fsObj={
-          type:"FS",
-          cif:mix_cif[0]
-        }
-        module.push(fsObj)
+        let fsObj = {
+          type: "FS",
+          cif: mix_cif[0],
+        };
+        module.push(fsObj);
       }
-      co_res[i].module = module
+      co_res[i].module = module;
       //获取计算信息-取末态的mix
       const job_id = co_res[i].fs_json.mix[0];
       const cat_info_sql = `select source,encut,prec,ldau,ivdw,lhfcalc,ldipol,nupdown,excharge,version,formula as atom_color from vaspjob v,incar i,poscar p where v.id = ${job_id} and v.incar_id = i.id and v.poscar_id = p.id;`;
@@ -339,8 +347,27 @@ const findReInfo = async (ctx) => {
       let iso_is_json = iso_res[i].is_json;
       let iso_ts_json = iso_res[i].ts_json;
       let iso_fs_json = iso_res[i].fs_json;
-      let table = [{type:"IS",mix:iso_is_json.mix,slab:iso_is_json.slab,energy:iso_res[i].is_energy},{type:"TS",mix:iso_ts_json.mix,slab:iso_ts_json.slab,energy:iso_res[i].ts_energy},{type:"FS",mix:iso_fs_json.mix,slab:iso_fs_json.slab,energy:iso_res[i].fs_energy}]
-      iso_res[i].table = table
+      let table = [
+        {
+          type: "IS",
+          mix: iso_is_json.mix,
+          slab: iso_is_json.slab,
+          energy: iso_res[i].is_energy,
+        },
+        {
+          type: "TS",
+          mix: iso_ts_json.mix,
+          slab: iso_ts_json.slab,
+          energy: iso_res[i].ts_energy,
+        },
+        {
+          type: "FS",
+          mix: iso_fs_json.mix,
+          slab: iso_fs_json.slab,
+          energy: iso_res[i].fs_energy,
+        },
+      ];
+      iso_res[i].table = table;
       let iso_mix_slab_arr = [
         ...iso_is_json.mix,
         ...iso_fs_json.slab,
@@ -361,9 +388,9 @@ const findReInfo = async (ctx) => {
         });
         iso_res[i].mix_slab = iso_mix_slab_obj;
       }
-      delete iso_res[i].is_json
-      delete iso_res[i].ts_json
-      delete iso_res[i].fs_json
+      delete iso_res[i].is_json;
+      delete iso_res[i].ts_json;
+      delete iso_res[i].fs_json;
     }
     let data = { abs, co_res, iso_res };
     ctx.body = util.success(data, "反应信息检索成功");
